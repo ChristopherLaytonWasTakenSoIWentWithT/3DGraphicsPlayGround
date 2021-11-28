@@ -4,7 +4,7 @@
  *  - CL
  */
 // Any representations of a vector = [x,y,z]
-const BasicRayTrace = (canvasId, spheres) => {
+const BasicRayTrace = (canvasId, spheres, lights) => {
     const  canvas = document.getElementById(canvasId);
     const canvas_width = canvas.width;
     const canvas_height = canvas.height;
@@ -22,7 +22,7 @@ const BasicRayTrace = (canvasId, spheres) => {
     for(let x = x_start; x <= x_end; x++) {
         for(let y = y_start; y <= y_end; y++ ){
             const location = canvasToViewport([x,y],canvas_height, canvas_width);
-            const color = traceRay(camera_position,location,1,9999999,spheres);
+            const color = traceRay(camera_position,location,1,9999999,spheres, lights);
             const r = color[0];
             const g = color[1];
             const b = color[2];
@@ -47,7 +47,7 @@ const canvasToViewport = (coords, canvas_height, canvas_width) => {
     ]
 }
 
-const traceRay = (camera, location, minDistance, maxDistance, shperes) => {
+const traceRay = (camera, location, minDistance, maxDistance, shperes, lights) => {
     let closest_t = Infinity;
     let closest_sphere = null;
     
@@ -69,10 +69,13 @@ const traceRay = (camera, location, minDistance, maxDistance, shperes) => {
     }
 
     if(closest_sphere === null){
-        return [255,255,255];
+        return [211,211,211];
     }
-
-    return closest_sphere.color;
+    const P = math.add(camera,math.multiply(closest_t,location));
+    let N = math.subtract(P, closest_sphere.center);
+    N = math.multiply(1 / LengthOfVector(N), N);
+    const inten = computeLighting(P, N, lights);
+    return math.multiply(closest_sphere.color,inten);
 }
 
 const interesectRaySphere = (camera, location,sphere) => {
@@ -112,4 +115,32 @@ const calculateQuadratic = (b, discriminant,a) => {
         math.divide(t1_dividend,divisor),
         math.divide(t2_dividend, divisor)
     ]
+}
+
+const computeLighting = (point, normal, lights) => {
+    let intensity = 0.0;
+    for(let i =0; i <lights.length;i++){
+        const light = lights[i];
+        if(light.type == "ambient") {
+            intensity += light.intensity;
+        } else {
+            let L = null;
+            if(light.type == 'point') {
+                L = math.subtract(light.position, point);
+            } else {
+                L = light.direction;
+            }
+            let n_dot_l = math.dot(normal,L);
+            if(n_dot_l > 0) {
+                const top = math.multiply(light.intensity,n_dot_l);
+                const bot = math.multiply(LengthOfVector(normal), LengthOfVector(L));
+                intensity += (top / bot);
+            }
+        }
+    }
+    return intensity;
+}
+
+const LengthOfVector = (vector) => {
+    return math.sqrt(math.dot(vector,vector));
 }
