@@ -74,7 +74,7 @@ const traceRay = (camera, location, minDistance, maxDistance, shperes, lights) =
     const P = math.add(camera,math.multiply(closest_t,location));
     let N = math.subtract(P, closest_sphere.center);
     N = math.multiply(1 / LengthOfVector(N), N);
-    const inten = computeLighting(P, N, lights);
+    const inten = computeLighting(P, N, lights, closest_sphere.specular, math.multiply(-1,location));
     return math.multiply(closest_sphere.color,inten);
 }
 
@@ -117,7 +117,7 @@ const calculateQuadratic = (b, discriminant,a) => {
     ]
 }
 
-const computeLighting = (point, normal, lights) => {
+const computeLighting = (point, normal, lights, specular, V) => {
     let intensity = 0.0;
     for(let i =0; i <lights.length;i++){
         const light = lights[i];
@@ -135,6 +135,16 @@ const computeLighting = (point, normal, lights) => {
                 const top = math.multiply(light.intensity,n_dot_l);
                 const bot = math.multiply(LengthOfVector(normal), LengthOfVector(L));
                 intensity += (top / bot);
+            }
+
+            if(specular){
+                const R = math.subtract(math.multiply(math.multiply(2,normal),math.dot(normal,L)),L);
+                const r_dot_v = math.dot(R,V);
+                if(r_dot_v > 0){ 
+                    const bot = math.multiply(LengthOfVector(R), LengthOfVector(V));
+                    const multiply = math.divide(r_dot_v, bot);
+                    intensity+= math.multiply(light.intensity,math.pow(multiply,specular));
+                }
             }
         }
     }
