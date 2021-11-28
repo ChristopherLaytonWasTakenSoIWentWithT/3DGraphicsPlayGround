@@ -1,0 +1,30 @@
+<html>
+
+<body>
+    
+<h2>Ray-tracing Basic</h2>
+<p>Discription to come</p>
+<canvas id="ray-trace-for-spheres" width="500" height="500" style="border:1px solid #000000;">
+</canvas>
+<script src="https://cdn.jsdelivr.net/npm/mathjs@10.0.0/lib/browser/math.min.js"></script>
+<script src="./ray-trace-basic.js"></script>
+<script>
+    const spheres = [
+        {
+            center : [0,.70,3],
+            radius : 1,
+            color : [255,0,0]
+        },{
+            center : [1,-1,10],
+            radius : 1,
+            color : [0,0,255]
+        },{
+            center : [-1,0,4],
+            radius : 1,
+            color : [0,255,255]
+        },
+    ];
+    BasicRayTrace('ray-trace-for-spheres',spheres);
+</script>
+</body>
+</html>

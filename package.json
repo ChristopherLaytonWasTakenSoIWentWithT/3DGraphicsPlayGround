@@ -1,0 +1,23 @@
+{
+  "name": "3dgraphicsplayground",
+  "version": "1.0.0",
+  "description": "Starting to learn 3D Graphics Programming - Place to dump code and have fun",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start":"npx http-server"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FeedDahBirds/3DGraphicsPlayGround.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/FeedDahBirds/3DGraphicsPlayGround/issues"
+  },
+  "homepage": "https://github.com/FeedDahBirds/3DGraphicsPlayGround#readme",
+  "dependencies": {
+    "http-server": "^14.0.0"
+  }
+}
