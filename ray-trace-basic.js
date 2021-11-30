@@ -22,7 +22,7 @@ const BasicRayTrace = (canvasId, spheres, lights) => {
     for(let x = x_start; x <= x_end; x++) {
         for(let y = y_start; y <= y_end; y++ ){
             const location = canvasToViewport([x,y],canvas_height, canvas_width);
-            const color = traceRay(camera_position,location,1,9999999,spheres, lights);
+            const color = traceRay(camera_position,location,1,9999999,spheres, lights, 3);
             const r = color[0];
             const g = color[1];
             const b = color[2];
@@ -47,35 +47,24 @@ const canvasToViewport = (coords, canvas_height, canvas_width) => {
     ]
 }
 
-const traceRay = (camera, location, minDistance, maxDistance, shperes, lights) => {
-    let closest_t = Infinity;
-    let closest_sphere = null;
-    
-    for(let i = 0; i < shperes.length; i++) {
-        const sphere = shperes[i];
-        const solutions = interesectRaySphere(camera, location, sphere);
-        const t1 = solutions[0];
-        const t2 = solutions[1];
-
-        if((t1 >= minDistance && t1 <= maxDistance) && t1 < closest_t) {
-            closest_t = t1;
-            closest_sphere = sphere;
-        }
-
-        if((t2 >= minDistance && t2 <= maxDistance) && t2 < closest_t) {
-            closest_t = t2;
-            closest_sphere = sphere;
-        }
-    }
-
+const traceRay = (camera, location, minDistance, maxDistance, shperes, lights, depth) => {
+    let {closest_sphere, closest_t} = closestIntersection(camera,location,minDistance,maxDistance,shperes);
     if(closest_sphere === null){
         return [211,211,211];
     }
     const P = math.add(camera,math.multiply(closest_t,location));
     let N = math.subtract(P, closest_sphere.center);
     N = math.multiply(1 / LengthOfVector(N), N);
-    const inten = computeLighting(P, N, lights, closest_sphere.specular, math.multiply(-1,location));
-    return math.multiply(closest_sphere.color,inten);
+    const inten = computeLighting(P, N, lights, closest_sphere.specular, math.multiply(-1,location), shperes);
+    let localColor = math.multiply(closest_sphere.color,inten);
+    const reflection = closest_sphere.reflective;
+    if(depth <= 0 || reflection <= 0) {
+        return localColor;
+    }
+    const reflectedRay = reflectRay(math.multiply(-1,location),N);
+    const reflectedColor = traceRay(P,reflectedRay,0.001,Infinity,shperes,lights,depth -1);
+
+    return math.add(math.multiply(localColor,math.subtract(1,reflection)), math.multiply(reflectedColor, reflection));
 }
 
 const interesectRaySphere = (camera, location,sphere) => {
@@ -117,7 +106,7 @@ const calculateQuadratic = (b, discriminant,a) => {
     ]
 }
 
-const computeLighting = (point, normal, lights, specular, V) => {
+const computeLighting = (point, normal, lights, specular, V, spheres) => {
     let intensity = 0.0;
     for(let i =0; i <lights.length;i++){
         const light = lights[i];
@@ -125,11 +114,21 @@ const computeLighting = (point, normal, lights, specular, V) => {
             intensity += light.intensity;
         } else {
             let L = null;
+            let t_max;
             if(light.type == 'point') {
                 L = math.subtract(light.position, point);
+                t_max =1;
             } else {
                 L = light.direction;
+                t_max = Infinity;
             }
+            
+            //shadow
+            let {closest_sphere,shadow_t} = closestIntersection(point,L,0.0001, t_max, spheres);
+            if(closest_sphere) {
+                continue;
+            }
+
             let n_dot_l = math.dot(normal,L);
             if(n_dot_l > 0) {
                 const top = math.multiply(light.intensity,n_dot_l);
@@ -151,6 +150,33 @@ const computeLighting = (point, normal, lights, specular, V) => {
     return intensity;
 }
 
+const closestIntersection = (camera, location, minDistance, maxDistance, shperes) => {
+    let closest_t = Infinity;
+    let closest_sphere = null;
+    for(let i = 0; i < shperes.length; i++) {
+        const sphere = shperes[i];
+        const solutions = interesectRaySphere(camera, location, sphere);
+        const t1 = solutions[0];
+        const t2 = solutions[1];
+
+        if((t1 >= minDistance && t1 <= maxDistance) && t1 < closest_t) {
+            closest_t = t1;
+            closest_sphere = sphere;
+        }
+
+        if((t2 >= minDistance && t2 <= maxDistance) && t2 < closest_t) {
+            closest_t = t2;
+            closest_sphere = sphere;
+        }
+    }
+    return {closest_sphere, closest_t};
+}
+
 const LengthOfVector = (vector) => {
     return math.sqrt(math.dot(vector,vector));
+}
+
+const reflectRay = (R,N) =>{
+    const N_dot_R = math.dot(R,N);
+    return math.subtract(math.multiply(math.multiply(2,N),N_dot_R),R);
 }
