@@ -17,11 +17,15 @@ const BasicRayTrace = (canvasId, spheres, lights) => {
     const y_end = canvas_height / 2;
     const y_start = -1 * (y_end);
 
-    const camera_position = [0,0,0];
+    const camera_position = [0,-5,0];
+    const cosAngle = math.cos(math.unit(-45, 'deg'));
+    const sinAngle = math.sin(math.unit(-45, 'deg'));
+    const x_camera_rotation = [[1,0,0],[0, cosAngle, math.multiply(-1, sinAngle)],[0,sinAngle,cosAngle]];
 
     for(let x = x_start; x <= x_end; x++) {
         for(let y = y_start; y <= y_end; y++ ){
-            const location = canvasToViewport([x,y],canvas_height, canvas_width);
+            let location = canvasToViewport([x,y],canvas_height, canvas_width);
+            location = math.multiply(camera_rotation, location);
             const color = traceRay(camera_position,location,1,9999999,spheres, lights, 3);
             const r = color[0];
             const g = color[1];
@@ -38,11 +42,8 @@ const BasicRayTrace = (canvasId, spheres, lights) => {
 const canvasToViewport = (coords, canvas_height, canvas_width) => {
     const distance = 1;
     return [
-        //x
         coords[0] * 1 / canvas_width ,
-        //y
         coords[1] * 1 / canvas_height,
-        //z
         distance
     ]
 }
